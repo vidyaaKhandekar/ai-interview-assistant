@@ -1,11 +1,10 @@
-
-import React, { useState } from 'react';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import * as z from 'zod';
-import { useInterview, QuestionType } from '@/contexts/InterviewContext';
-import DashboardLayout from '@/components/layout/DashboardLayout';
-import { Button } from '@/components/ui/button';
+import React, { useState } from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import * as z from "zod";
+import { useInterview, QuestionType } from "@/contexts/InterviewContext";
+import DashboardLayout from "@/components/layout/DashboardLayout";
+import { Button } from "@/components/ui/button";
 import {
   Form,
   FormControl,
@@ -13,33 +12,30 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from '@/components/ui/form';
-import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { toast } from '@/components/ui/sonner';
-import { HelpCircle, Upload } from 'lucide-react';
-
-const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
-const ACCEPTED_FILE_TYPES = ['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'];
+} from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { toast } from "@/components/ui/sonner";
+import { HelpCircle } from "lucide-react";
 
 const generateQuestionsSchema = z.object({
-  jobDescription: z.string().min(20, { message: 'Job description is required and should be detailed' }),
-  resume: z
-    .instanceof(FileList)
-    .optional()
-    .refine((files) => {
-      if (!files || files.length === 0) return true;
-      return files.length === 1;
-    }, 'Please upload only one file')
-    .refine((files) => {
-      if (!files || files.length === 0) return true;
-      return files[0].size <= MAX_FILE_SIZE;
-    }, 'File size should be less than 5MB')
-    .refine((files) => {
-      if (!files || files.length === 0) return true;
-      return ACCEPTED_FILE_TYPES.includes(files[0].type);
-    }, 'Only PDF and Word documents are accepted'),
+  jobTitle: z.string().min(2, { message: "Job Title is required" }),
+  jobDescription: z
+    .string()
+    .min(20, { message: "Job description is required and should be detailed" }),
+  workExperience: z
+    .number({ invalid_type_error: "Work experience must be a number" })
+    .min(0, { message: "Work experience must be at least 0 years" }),
+  requiredSkills: z
+    .string()
+    .min(2, { message: "Required skills are necessary" }),
 });
 
 type GenerateQuestionsFormValues = z.infer<typeof generateQuestionsSchema>;
@@ -51,18 +47,25 @@ const GenerateQuestions: React.FC = () => {
   const form = useForm<GenerateQuestionsFormValues>({
     resolver: zodResolver(generateQuestionsSchema),
     defaultValues: {
-      jobDescription: '',
+      jobTitle: "",
+      jobDescription: "",
+      workExperience: 0,
+      requiredSkills: "",
     },
   });
 
   const onSubmit = async (data: GenerateQuestionsFormValues) => {
     try {
-      const resumeFile = data.resume && data.resume.length > 0 ? data.resume[0] : null;
-      const generatedQuestions = await generateQuestions(resumeFile, data.jobDescription);
+      const generatedQuestions = await generateQuestions(
+        data.jobTitle,
+        data.jobDescription,
+        data.workExperience,
+        data.requiredSkills
+      );
       setQuestions(generatedQuestions);
-      toast.success('Questions generated successfully');
+      toast.success("Questions generated successfully");
     } catch (error) {
-      toast.error('Failed to generate questions');
+      toast.error("Failed to generate questions");
       console.error(error);
     }
   };
@@ -75,12 +78,31 @@ const GenerateQuestions: React.FC = () => {
             <CardHeader>
               <CardTitle>Question Generator</CardTitle>
               <CardDescription>
-                Create tailored interview questions based on the job and candidate profile
+                Create tailored interview questions based on the job role
               </CardDescription>
             </CardHeader>
             <CardContent>
               <Form {...form}>
-                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+                <form
+                  onSubmit={form.handleSubmit(onSubmit)}
+                  className="space-y-6"
+                >
+                  <FormField
+                    control={form.control}
+                    name="jobTitle"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Job Title</FormLabel>
+                        <FormControl>
+                          <Input
+                            placeholder="e.g. Frontend Developer"
+                            {...field}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
                   <FormField
                     control={form.control}
                     name="jobDescription"
@@ -100,44 +122,52 @@ const GenerateQuestions: React.FC = () => {
                   />
                   <FormField
                     control={form.control}
-                    name="resume"
-                    render={({ field: { onChange, value, ...rest } }) => (
+                    name="workExperience"
+                    render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Candidate Resume (Optional)</FormLabel>
+                        <FormLabel>Work Experience (in years)</FormLabel>
                         <FormControl>
-                          <div className="border-2 border-dashed border-gray-300 rounded-md p-6 text-center hover:border-gray-400 transition-colors">
-                            <Input
-                              type="file"
-                              accept=".pdf,.doc,.docx"
-                              className="hidden"
-                              id="resume-upload"
-                              onChange={(e) => {
-                                onChange(e.target.files);
-                              }}
-                              {...rest}
-                            />
-                            <label htmlFor="resume-upload" className="cursor-pointer flex flex-col items-center">
-                              <Upload className="h-8 w-8 text-gray-400 mb-2" />
-                              <span className="text-sm font-medium text-gray-700">
-                                Click to upload resume
-                              </span>
-                              <span className="text-xs text-gray-500 mt-1">
-                                PDF or Word (max 5MB)
-                              </span>
-                              {value && value.length > 0 && (
-                                <span className="mt-2 text-sm text-interview-primary">
-                                  {value[0].name}
-                                </span>
-                              )}
-                            </label>
-                          </div>
+                          <Input
+                            type="number"
+                            min="0"
+                            placeholder="e.g. 3"
+                            {...field}
+                            onChange={(e) =>
+                              field.onChange(Number(e.target.value))
+                            }
+                          />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
                     )}
                   />
-                  <Button type="submit" className="w-full" disabled={loading}>
-                    {loading ? 'Generating...' : 'Generate Questions'}
+                  <FormField
+                    control={form.control}
+                    name="requiredSkills"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Required Skills</FormLabel>
+                        <FormControl>
+                          <Textarea
+                            placeholder="e.g. React, TypeScript, Node.js"
+                            {...field}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <Button
+                    type="submit"
+                    className="w-full"
+                    disabled={loading}
+                    style={{
+                      background:
+                        "linear-gradient(139deg, #5BBFF6 8.31%, #7F6AF2 31.55%, #B651D7 48.99%, #E83E54 63.93%, #ED8939 91.32%)",
+                    }}
+                  >
+                    {loading ? "Generating..." : "Generate Questions"}
                   </Button>
                 </form>
               </Form>
@@ -150,35 +180,54 @@ const GenerateQuestions: React.FC = () => {
             <CardHeader className="border-b">
               <CardTitle>Generated Questions</CardTitle>
               <CardDescription>
-                AI-generated questions based on job requirements and candidate profile
+                AI-generated questions based on job title, description, and
+                skills
               </CardDescription>
             </CardHeader>
             <CardContent className="pt-6">
               {questions.length > 0 ? (
                 <div className="space-y-5">
                   {questions.map((question) => (
-                    <div key={question.id} className="border rounded-lg p-4 bg-gray-50 hover:bg-white hover:shadow-sm transition-all">
+                    <div
+                      key={question.id}
+                      className="border rounded-lg p-4 bg-gray-50 hover:bg-white hover:shadow-sm transition-all"
+                    >
                       <div className="flex justify-between items-start mb-2">
-                        <span className={`badge ${
-                          question.category === 'Technical' ? 'badge-blue' : 'badge-green'
-                        }`}>
+                        <span
+                          className={`badge ${
+                            question.category === "Technical"
+                              ? "badge-blue"
+                              : "badge-green"
+                          }`}
+                        >
                           {question.category}
                         </span>
-                        <span className={`badge ${
-                          question.difficulty === 'Easy' ? 'badge-green' : 
-                          question.difficulty === 'Medium' ? 'badge-yellow' : 'badge-red'
-                        }`}>
+                        <span
+                          className={`badge ${
+                            question.difficulty === "easy"
+                              ? "badge-green"
+                              : question.difficulty === "medium"
+                              ? "badge-yellow"
+                              : "badge-red"
+                          }`}
+                        >
                           {question.difficulty}
                         </span>
                       </div>
-                      <p className="text-gray-800 font-medium">{question.question}</p>
+                      <p className="text-gray-800 font-medium">
+                        {question.question}
+                      </p>
                     </div>
                   ))}
                   <div className="flex justify-end mt-4">
-                    <Button onClick={() => {
-                      navigator.clipboard.writeText(questions.map(q => q.question).join('\n\n'));
-                      toast.success('Questions copied to clipboard');
-                    }}>
+                    <Button
+                      onClick={() => {
+                        navigator.clipboard.writeText(
+                          questions.map((q) => q.question).join("\n\n")
+                        );
+                        toast.success("Questions copied to clipboard");
+                      }}
+                    >
                       Copy All Questions
                     </Button>
                   </div>
@@ -186,9 +235,12 @@ const GenerateQuestions: React.FC = () => {
               ) : (
                 <div className="flex flex-col items-center justify-center py-10 text-center text-gray-500">
                   <HelpCircle className="h-12 w-12 text-gray-300 mb-4" />
-                  <h3 className="text-lg font-medium mb-2">No questions generated yet</h3>
+                  <h3 className="text-lg font-medium mb-2">
+                    No questions generated yet
+                  </h3>
                   <p className="max-w-md">
-                    Fill out the form with a job description and optionally upload a resume to generate tailored interview questions.
+                    Fill out the form with job title, description, experience,
+                    and skills to generate tailored interview questions.
                   </p>
                 </div>
               )}

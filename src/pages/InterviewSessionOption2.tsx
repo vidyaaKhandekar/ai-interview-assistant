@@ -24,10 +24,9 @@ import {
   ThumbsUp,
   ThumbsDown,
 } from "lucide-react";
-import axios from "axios";
 
 const InterviewSession: React.FC = () => {
-  const { interviews, setCurrentInterview, generateReport } = useInterview();
+  const { interviews, setCurrentInterview } = useInterview();
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
 
@@ -92,8 +91,6 @@ const InterviewSession: React.FC = () => {
       const foundInterview = interviews.find((i) => i.id === id);
       if (foundInterview) {
         setInterview(foundInterview);
-        console.log("foundInterview", foundInterview.questions);
-        setQuestions(foundInterview.questions);
         setCurrentInterview(foundInterview);
       } else {
         toast.error("Interview not found");
@@ -156,7 +153,7 @@ const InterviewSession: React.FC = () => {
     const top = (window.screen.height - height) / 2;
 
     const popup = window.open(
-      interview.interviewerLink,
+      "https://0241-2409-40c2-1051-2e33-28e7-bab6-55d-4dea.ngrok-free.app/join?room_id=7e8b9c4c&display_name=av&mute_audio=0&mute_video=0",
       "InterviewCall",
       `width=${width},height=${height},left=${left},top=${top}`
     );
@@ -174,31 +171,12 @@ const InterviewSession: React.FC = () => {
   };
 
   // Modified handleStartMeeting
-  const handleStartMeeting = async () => {
+  const handleStartMeeting = () => {
     setCallActive(true);
     toast.success("Interview session started");
     openPopupWindow();
-    const id = searchParams.get("id");
-    try {
-      const response = await axios.post(
-        `${import.meta.env.VITE_API_BASE_URL}/start_assist`,
-        {
-          room_id: id,
-        },
-        {
-          headers: {
-            "Content-Type": "application/json",
-            // withCredentials: true, // Uncomment if backend expects cookies
-          },
-        }
-      );
 
-      console.log("AI Assist Started:", response.data);
-    } catch (error) {
-      console.error("Error starting AI Assist:", error);
-      toast.error("Failed to start AI assist");
-    }
-
+    // Simulate AI beginning analysis after a short delay
     setTimeout(() => {
       setFeedbackEnabled(true);
       setAiAnalysis({
@@ -213,9 +191,7 @@ const InterviewSession: React.FC = () => {
 
   // Modified handleEndMeeting
   const handleEndMeeting = () => {
-    const id = searchParams.get("id");
     setCallActive(false);
-    generateReport(id);
     if (popupWindow && !popupWindow.closed) {
       popupWindow.close();
     }
@@ -440,9 +416,9 @@ const InterviewSession: React.FC = () => {
                               </span>
                               <span
                                 className={`text-xs px-2 py-0.5 rounded-full ${
-                                  question.difficulty === "easy"
+                                  question.difficulty === "Easy"
                                     ? "bg-green-100 text-green-800"
-                                    : question.difficulty === "medium"
+                                    : question.difficulty === "Medium"
                                     ? "bg-yellow-100 text-yellow-800"
                                     : "bg-red-100 text-red-800"
                                 }`}

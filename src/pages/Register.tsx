@@ -1,12 +1,11 @@
-
-import React from 'react';
-import { useNavigate, Link } from 'react-router-dom';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import * as z from 'zod';
-import { useAuth } from '@/contexts/AuthContext';
-import AuthLayout from '@/components/layout/AuthLayout';
-import { Button } from '@/components/ui/button';
+import React from "react";
+import { useNavigate, Link } from "react-router-dom";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import * as z from "zod";
+import { useAuth } from "@/contexts/AuthContext";
+import AuthLayout from "@/components/layout/AuthLayout";
+import { Button } from "@/components/ui/button";
 import {
   Form,
   FormControl,
@@ -14,19 +13,23 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from '@/components/ui/form';
-import { Input } from '@/components/ui/input';
-import { toast } from '@/components/ui/sonner';
+} from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
+import { toast } from "@/components/ui/sonner";
 
-const registerSchema = z.object({
-  name: z.string().min(2, { message: 'Name must be at least 2 characters' }),
-  email: z.string().email({ message: 'Please enter a valid email address' }),
-  password: z.string().min(6, { message: 'Password must be at least 6 characters' }),
-  confirmPassword: z.string(),
-}).refine((data) => data.password === data.confirmPassword, {
-  message: "Passwords don't match",
-  path: ["confirmPassword"],
-});
+const registerSchema = z
+  .object({
+    name: z.string().min(2, { message: "Name must be at least 2 characters" }),
+    email: z.string().email({ message: "Please enter a valid email address" }),
+    password: z
+      .string()
+      .min(6, { message: "Password must be at least 6 characters" }),
+    confirmPassword: z.string(),
+  })
+  .refine((data) => data.password === data.confirmPassword, {
+    message: "Passwords don't match",
+    path: ["confirmPassword"],
+  });
 
 type RegisterFormValues = z.infer<typeof registerSchema>;
 
@@ -37,19 +40,19 @@ const Register: React.FC = () => {
   const form = useForm<RegisterFormValues>({
     resolver: zodResolver(registerSchema),
     defaultValues: {
-      name: '',
-      email: '',
-      password: '',
-      confirmPassword: '',
+      name: "",
+      email: "",
+      password: "",
+      confirmPassword: "",
     },
   });
 
   const onSubmit = async (data: RegisterFormValues) => {
     try {
       await register(data.name, data.email, data.password);
-      navigate('/dashboard');
+      navigate("/login");
     } catch (error) {
-      toast.error('Registration failed. Please try again.');
+      toast.error("Registration failed. Please try again.");
       console.error(error);
     }
   };
@@ -111,13 +114,13 @@ const Register: React.FC = () => {
             )}
           />
           <Button type="submit" className="w-full" disabled={loading}>
-            {loading ? 'Creating account...' : 'Create account'}
+            {loading ? "Creating account..." : "Create account"}
           </Button>
         </form>
       </Form>
       <div className="mt-6 text-center">
         <p className="text-sm text-gray-600">
-          Already have an account?{' '}
+          Already have an account?{" "}
           <Link
             to="/login"
             className="font-medium text-interview-primary hover:text-interview-secondary"
